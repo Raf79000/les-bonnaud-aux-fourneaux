@@ -1,0 +1,76 @@
+services:
+  mariadb:
+    image: mariadb:10.11
+    container_name: mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MARIADB_PORT}:3306"
+    volumes:
+      - ./data:/var/lib/mysql
+
+    # ── Add a healthcheck so Compose knows when MariaDB is truly ready ──────
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u \"${MYSQL_USER}\" -p\"${MYSQL_PASSWORD}\" > /dev/null 2>&1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: phpmyadmin
+    restart: always
+    ports:
+      - "${PHPMYADMIN_PORT}:80"
+    environment:
+      PMA_HOST: ${PMA_HOST}
+      PMA_USER: ${PMA_USER}
+      PMA_PASSWORD: ${PMA_PASSWORD}
+
+    # ── Wait until mariadb’s healthcheck is “healthy” before starting ────────
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  backend:
+    container_name: backend
+    build: ./backend/
+    restart: always
+    ports:
+      - "${BACKEND_PORT}:3000"
+      - "${BACKEND_DEBUG_PORT}:9229"
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    volumes:
+      - ./backend:/backend
+      - /backend/node_modules
+
+    # ── Wait until mariadb’s healthcheck is “healthy” before starting ────────
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  frontend:
+    container_name: frontend
+    build: ./frontend/
+    depends_on:
+      - backend
+    restart: always
+    ports:
+      - "${FRONTEND_PORT}:80"
+    environment:
+      API_BASE_URL: ${API_BASE_URL}
+    volumes:
+      - ./frontend:/frontend
+      - /frontend/node_modules
+
+volumes:
+  db_data:

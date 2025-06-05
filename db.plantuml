@@ -1,0 +1,67 @@
+@startuml
+
+'===========================
+' Enumerations
+'===========================
+enum Difficulty {
+    EASY
+    MEDIUM
+    HARD
+}
+
+enum Category {
+    STARTER
+    MAIN_COURSE
+    DESSERT
+    ALL
+}
+
+'===========================
+' Classes
+'===========================
+class Ingredient {
+    +String name
+}
+
+class RecipeIngredient {
+    +double weight    ' in grams (optional)
+    +int quantity     ' number of items (optional)
+}
+
+class Recipe {
+    +String name
+    +String description
+    +String imageUrl
+    +int preparationTime  ' in minutes
+    +Difficulty difficulty
+    +Category category
+}
+
+class RecipeBook {
+    +String title
+}
+
+class User {
+    +String username
+    +String email
+}
+
+'===========================
+' Associations
+'===========================
+' A Recipe is composed of one or more RecipeIngredients
+Recipe "1" *-- "*" RecipeIngredient : contains
+
+' Each RecipeIngredient refers to exactly one Ingredient
+RecipeIngredient "*" -- "1" Ingredient : refers to
+
+' A RecipeBook can store multiple Recipes
+RecipeBook "*" --> "*" Recipe : stores
+
+' A User owns zero or more RecipeBooks
+User "1" --> "*" RecipeBook : owns
+
+' A User can mark many Recipes as favorites (many-to-many)
+User "*" --> "*" Recipe : favorites
+
+@enduml
